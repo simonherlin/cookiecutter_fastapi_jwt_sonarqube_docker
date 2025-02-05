@@ -51,12 +51,13 @@ stop-jupyterlab:
 
 {% if cookiecutter.use_sonarqube == "yes" %}
 .PHONY: sonar
-sonar: $(VENV)/bin/activate
-	sonar-scanner \
-		-Dsonar.projectKey={{ cookiecutter.sonarqube_project_key }} \
-		-Dsonar.sources=. \
-		-Dsonar.host.url={{ cookiecutter.sonarqube_server_url }} \
-		-Dsonar.login={{ cookiecutter.sonarqube_token }}
+sonar:
+	docker run --rm --network=host \
+	  -e SONAR_HOST_URL={{ cookiecutter.sonarqube_server_url }} \
+	  -v "$(shell pwd)":/usr/src \
+	  sonarsource/sonar-scanner-cli \
+	  -Dsonar.projectKey={{ cookiecutter.sonarqube_project_key }} \
+	  -Dsonar.token={{ cookiecutter.sonarqube_token }}
 {% else %}
 .PHONY: sonar
 sonar:
