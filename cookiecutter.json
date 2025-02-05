@@ -1,0 +1,11 @@
+{
+    "project_name": "My FastAPI Project",
+    "project_slug": "my_fastapi_project",
+    "author_name": "Votre Nom",
+    "python_version": "3.9",
+    "use_sonarqube": "no",
+    "sonarqube_project_key": "my_fastapi_project",
+    "sonarqube_server_url": "http://localhost:9000",
+    "sonarqube_token": "your_sonarqube_token"
+  }
+  
