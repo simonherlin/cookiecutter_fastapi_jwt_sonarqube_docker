@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String
-from {{ cookiecutter.project_slug }}.app.db.base import Base
+from app.db.base import Base
+
 
 class User(Base):
     __tablename__ = "users"

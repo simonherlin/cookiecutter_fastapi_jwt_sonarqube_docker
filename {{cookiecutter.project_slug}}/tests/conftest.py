@@ -1,6 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
-from {{ cookiecutter.project_slug }}.app.main import app
+from ..app.app import app
+
 
 @pytest.fixture(scope="module")
 def client():

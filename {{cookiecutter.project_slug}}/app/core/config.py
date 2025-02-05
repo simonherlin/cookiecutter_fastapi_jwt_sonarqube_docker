@@ -1,6 +1,7 @@
 import os
 from pydantic import BaseSettings
 
+
 class Settings(BaseSettings):
     PROJECT_NAME: str = "{{ cookiecutter.project_name }}"
     # Base de données
@@ -12,5 +13,6 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = ".env"
+
 
 settings = Settings()

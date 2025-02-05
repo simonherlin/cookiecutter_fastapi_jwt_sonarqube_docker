@@ -2,12 +2,13 @@ from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from {{ cookiecutter.project_slug }}.app.core import security
-from {{ cookiecutter.project_slug }}.app.core.config import settings
-from {{ cookiecutter.project_slug }}.app.models import user as user_model
-from {{ cookiecutter.project_slug }}.app.db.session import SessionLocal
+from app.core import security
+from app.core.config import settings
+from app.models import user as user_model
+from app.db.session import SessionLocal
 
 router = APIRouter()
+
 
 def get_db():
     db = SessionLocal()
@@ -16,6 +17,7 @@ def get_db():
     finally:
         db.close()
 
+
 def authenticate_user(db: Session, email: str, password: str):
     user = db.query(user_model.User).filter(user_model.User.email == email).first()
     if not user:
@@ -23,6 +25,7 @@ def authenticate_user(db: Session, email: str, password: str):
     if not security.verify_password(password, user.hashed_password):
         return False
     return user
+
 
 @router.post("/token", response_model=dict)
 def login_for_access_token(

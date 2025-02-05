@@ -26,7 +26,7 @@ help:
 install: $(VENV)/bin/activate
 
 $(VENV)/bin/activate: $(REQUIREMENTS)
-	python3.9 -m venv $(VENV)
+	python3 -m venv $(VENV)
 	$(VENV)/bin/pip install --upgrade pip
 	$(VENV)/bin/pip install -r $(REQUIREMENTS)
 	@touch $(VENV)/bin/activate
@@ -38,7 +38,7 @@ tests: $(VENV)/bin/activate
 
 .PHONY: run
 run: $(VENV)/bin/activate
-	$(VENV)/bin/python {{ cookiecutter.project_slug }}/app/main.py
+	$(VENV)/bin/uvicorn app.main:app --host 0.0.0.0 --port $(if $(PORT),$(PORT),8000) --reload
 
 .PHONY: jupyterlab
 jupyterlab: $(VENV)/bin/activate

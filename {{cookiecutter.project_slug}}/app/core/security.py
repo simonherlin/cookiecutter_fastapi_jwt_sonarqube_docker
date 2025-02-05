@@ -5,9 +5,9 @@ from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from {{ cookiecutter.project_slug }}.app.core.config import settings
-from {{ cookiecutter.project_slug }}.app.models import user as user_model
-from {{ cookiecutter.project_slug }}.app.db.session import SessionLocal
+from app.core.config import settings
+from app.models import user as user_model
+from app.db.session import SessionLocal
 
 SECRET_KEY = settings.JWT_SECRET_KEY
 ALGORITHM = settings.JWT_ALGORITHM

@@ -1,8 +1,9 @@
 import pytest
 from fastapi.testclient import TestClient
-from {{ cookiecutter.project_slug }}.app.main import app
+from ..app.app import read_root
+
 
 @pytest.fixture(scope="module")
 def client():
-    with TestClient(app) as c:
+    with TestClient(read_root) as c:
         yield c
