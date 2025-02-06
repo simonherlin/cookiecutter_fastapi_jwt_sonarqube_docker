@@ -2,25 +2,30 @@
 ENV_FILE=.env
 REQUIREMENTS=requirements.txt
 VENV=venv
-PROJECT_NAME={{ cookiecutter.project_name }}
+PROJECT_NAME=New Test API
 
 .PHONY: help
 help:
 	@echo "Usage: make [target]"
 	@echo ""
 	@echo "Targets:"
-	@echo "  install         - Crée un environnement virtuel et installe les dépendances."
-	@echo "  tests           - Exécute les tests avec génération de rapports de couverture."
-	@echo "  run             - Lance l'application principale."
+	@echo "  install         - Installe l'environnement et les dépendances."
+	@echo "  tests           - Exécute les tests avec couverture."
+	@echo "  run             - Démarre l'application FastAPI."
 	@echo "  jupyterlab      - Lance JupyterLab."
 	@echo "  stop-jupyterlab - Arrête JupyterLab."
-	@echo "  sonar           - Exécute SonarQube pour analyser le code (si configuré)."
+	@echo "  sonar           - Analyse du code avec SonarQube."
 	@echo "  format          - Formate le code avec Black."
 	@echo "  lint            - Vérifie le code avec Flake8."
-	@echo "  build           - Construit le package (utilisez docker-build pour l'image Docker)."
+	@echo "  alembic-init    - Initialise Alembic."
+	@echo "  alembic-migrate - Crée une migration (ex: make alembic-migrate m='Message')."
+	@echo "  alembic-upgrade - Applique les migrations."
+	@echo "  alembic-downgrade - Annule la dernière migration."
+	@echo "  alembic-history - Affiche l'historique des migrations."
+	@echo "  alembic-reset   - Supprime et recrée toute la base de données."
 	@echo "  docker-build    - Construit l'image Docker."
-	@echo "  docker-run      - Lance l'image Docker."
-	@echo "  clean           - Supprime l'environnement virtuel et les fichiers temporaires."
+	@echo "  docker-run      - Lance le conteneur Docker."
+	@echo "  clean           - Supprime les fichiers temporaires."
 
 .PHONY: install
 install: $(VENV)/bin/activate
@@ -31,10 +36,44 @@ $(VENV)/bin/activate: $(REQUIREMENTS)
 	$(VENV)/bin/pip install -r $(REQUIREMENTS)
 	@touch $(VENV)/bin/activate
 
+# ---------------------- ALEMBIC COMMANDS ----------------------
+
+.PHONY: alembic-init
+alembic-init:
+	$(VENV)/bin/alembic init migrations
+
+.PHONY: alembic-migrate
+alembic-migrate:
+	@if [ -z "$(m)" ]; then \
+		echo "⚠️  Erreur : Vous devez spécifier un message pour la migration (ex: make alembic-migrate m='ajout table user')"; \
+		exit 1; \
+	fi
+	$(VENV)/bin/alembic revision --autogenerate -m "$(m)"
+
+.PHONY: alembic-upgrade
+alembic-upgrade:
+	$(VENV)/bin/alembic upgrade head
+
+.PHONY: alembic-downgrade
+alembic-downgrade:
+	$(VENV)/bin/alembic downgrade -1
+
+.PHONY: alembic-history
+alembic-history:
+	$(VENV)/bin/alembic history
+
+.PHONY: alembic-reset
+alembic-reset:
+	rm -f app/db.sqlite3
+	$(VENV)/bin/alembic upgrade head
+	@echo "✅ Base de données réinitialisée avec succès !"
+
+# ---------------------- APPLICATION COMMANDS ----------------------
+
 .PHONY: tests
 tests: $(VENV)/bin/activate
 	$(VENV)/bin/pytest --maxfail=1 --disable-warnings -q \
-		--cov={{ cookiecutter.project_slug }} --cov-report=term-missing --cov-report=html tests/ --junitxml=results/pytest-results.xml
+		--cov=my_fastapi_project --cov-report=term-missing --cov-report=html tests/ --junitxml=results/pytest-results.xml
 
 .PHONY: run
 run: $(VENV)/bin/activate
@@ -49,32 +88,24 @@ stop-jupyterlab:
 	@echo "Arrêt de JupyterLab..."
 	@pkill -f "jupyter-lab"
 
-{% if cookiecutter.use_sonarqube == "yes" %}
 .PHONY: sonar
 sonar:
 	docker run --rm --network=host \
-	  -e SONAR_HOST_URL={{ cookiecutter.sonarqube_server_url }} \
+	  -e SONAR_HOST_URL=http://localhost:9000 \
 	  -v "$(shell pwd)":/usr/src \
 	  sonarsource/sonar-scanner-cli \
-	  -Dsonar.projectKey={{ cookiecutter.sonarqube_project_key }} \
-	  -Dsonar.token={{ cookiecutter.sonarqube_token }}
-{% else %}
-.PHONY: sonar
-sonar:
-	@echo "SonarQube n'est pas configuré pour ce projet."
-{% endif %}
+	  -Dsonar.projectKey=test-api \
+	  -Dsonar.token=sqp_ff1121149e9563497bd729337b6f756d82995194
 
 .PHONY: format
 format: $(VENV)/bin/activate
-	$(VENV)/bin/black .
+	$(VENV)/bin/black app/
 
 .PHONY: lint
 lint: $(VENV)/bin/activate
-	$(VENV)/bin/flake8 {{ cookiecutter.project_slug }} tests/ > results/flake8-report.txt
+	$(VENV)/bin/flake8 app/ tests/ > results/flake8-report.txt
 
-.PHONY: build
-build: $(VENV)/bin/activate
-	@echo "Construction du package non implémentée. Utilisez 'docker-build' pour construire l'image Docker."
+# ---------------------- DOCKER COMMANDS ----------------------
 
 .PHONY: docker-build
 docker-build:
