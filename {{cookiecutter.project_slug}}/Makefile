@@ -2,7 +2,7 @@
 ENV_FILE=.env
 REQUIREMENTS=requirements.txt
 VENV=venv
-PROJECT_NAME=New Test API
+PROJECT_NAME={{ cookiecutter.project_slug }}
 
 .PHONY: help
 help:
@@ -29,7 +29,6 @@ help:
 
 .PHONY: install
 install: $(VENV)/bin/activate
-
 $(VENV)/bin/activate: $(REQUIREMENTS)
 	python3 -m venv $(VENV)
 	$(VENV)/bin/pip install --upgrade pip
