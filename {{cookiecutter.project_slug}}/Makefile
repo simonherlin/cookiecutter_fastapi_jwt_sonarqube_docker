@@ -73,7 +73,10 @@ alembic-reset:
 .PHONY: tests
 tests: $(VENV)/bin/activate
 	$(VENV)/bin/pytest --maxfail=1 --disable-warnings -q \
-		--cov=my_fastapi_project --cov-report=term-missing --cov-report=html tests/ --junitxml=results/pytest-results.xml
+		--cov=app --cov-report=term-missing --cov-report=html \
+		--cov-report=xml:results/coverage.xml tests/ \
+		--junitxml=results/pytest-results.xml
+
 
 .PHONY: run
 run: $(VENV)/bin/activate
@@ -91,11 +94,14 @@ stop-jupyterlab:
 .PHONY: sonar
 sonar:
 	docker run --rm --network=host \
-	  -e SONAR_HOST_URL=http://localhost:9000 \
+	  -e SONAR_HOST_URL={{ cookiecutter.sonarqube_server_url }} \
 	  -v "$(shell pwd)":/usr/src \
 	  sonarsource/sonar-scanner-cli \
-	  -Dsonar.projectKey=test-api \
-	  -Dsonar.token=sqp_ff1121149e9563497bd729337b6f756d82995194
+	  -Dsonar.projectKey={{ cookiecutter.sonarqube_project_key }} \
+	  -Dsonar.token={{ cookiecutter.sonarqube_token }} \
+	  -Dsonar.python.coverage.reportPaths=results/coverage.xml \
+	  -Dsonar.python.xunit.reportPath=results/pytest-results.xml \
+	  -Dsonar.python.flake8.reportPaths=results/flake8-report.json
 
 .PHONY: format
 format: $(VENV)/bin/activate
@@ -103,7 +109,7 @@ format: $(VENV)/bin/activate
 
 .PHONY: lint
 lint: $(VENV)/bin/activate
-	$(VENV)/bin/flake8 app/ tests/ > results/flake8-report.txt
+	$(VENV)/bin/flake8 app/ tests/ --format=json > results/flake8-report.json
 
 # ---------------------- DOCKER COMMANDS ----------------------
 

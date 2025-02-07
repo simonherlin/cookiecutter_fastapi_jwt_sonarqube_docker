@@ -1,6 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
-from ..app.app import read_root
+from ..app.main import read_root
 
 
 @pytest.fixture(scope="module")
