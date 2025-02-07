@@ -6,7 +6,6 @@ import app.db.models
 from app.db.base import Base
 
 config = context.config
-config.set_main_option("sqlalchemy.url", "sqlite:///./app/db.sqlite3")
 
 target_metadata = Base.metadata
 
