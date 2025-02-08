@@ -10,22 +10,25 @@ help:
 	@echo ""
 	@echo "Targets:"
 	@echo "  install         - Installe l'environnement et les dépendances."
+	@echo "  start           - Initialise et lance les migrations."
+	@echo "  check-all       - Exécute formatage, tests, linting et SonarQube."
 	@echo "  tests           - Exécute les tests avec couverture."
 	@echo "  run             - Démarre l'application FastAPI."
 	@echo "  jupyterlab      - Lance JupyterLab."
-	@echo "  stop-jupyterlab - Arrête JupyterLab."
 	@echo "  sonar           - Analyse du code avec SonarQube."
 	@echo "  format          - Formate le code avec Black."
 	@echo "  lint            - Vérifie le code avec Flake8."
 	@echo "  alembic-init    - Initialise Alembic."
-	@echo "  alembic-migrate - Crée une migration (ex: make alembic-migrate m='Message')."
+	@echo "  alembic-migrate - Crée une migration."
 	@echo "  alembic-upgrade - Applique les migrations."
 	@echo "  alembic-downgrade - Annule la dernière migration."
-	@echo "  alembic-history - Affiche l'historique des migrations."
-	@echo "  alembic-reset   - Supprime et recrée toute la base de données."
+	@echo "  alembic-reset   - Supprime et recrée la base de données."
 	@echo "  docker-build    - Construit l'image Docker."
 	@echo "  docker-run      - Lance le conteneur Docker."
 	@echo "  clean           - Supprime les fichiers temporaires."
+
+
+# ---------------------- INSTALLATION ----------------------
 
 .PHONY: install
 install: $(VENV)/bin/activate
@@ -67,7 +70,31 @@ alembic-reset:
 	$(VENV)/bin/alembic upgrade head
 	@echo "✅ Base de données réinitialisée avec succès !"
 
-# ---------------------- APPLICATION COMMANDS ----------------------
+
+# ---------------------- ENV.PY MANAGEMENT ----------------------
+
+.PHONY: change-env
+change-env: 
+	@if [ -f "temp/env.py" ]; then \
+		echo "🔄 Copie du fichier env.py personnalisé..."; \
+		cp temp/env.py migrations/env.py; \
+		rm -rf temp; \
+		echo "✅ env.py mis à jour."; \
+	else \
+		echo "⚠️  Fichier temp/env.py introuvable !"; \
+	fi
+
+# ---------------------- START SETUP ----------------------
+
+.PHONY: start
+start: install alembic-init update-env alembic-migrate alembic-upgrade
+	@echo "🚀 Projet prêt à l'emploi !"
+
+# ---------------------- TESTS & VERIFICATIONS ----------------------
+
+.PHONY: format
+format: $(VENV)/bin/activate
+	$(VENV)/bin/black app/
 
 .PHONY: tests
 tests: $(VENV)/bin/activate
@@ -76,6 +103,28 @@ tests: $(VENV)/bin/activate
 		--cov-report=xml:results/coverage.xml tests/ \
 		--junitxml=results/pytest-results.xml
 
+.PHONY: lint
+lint: $(VENV)/bin/activate
+	$(VENV)/bin/flake8 app/ tests/ --format=json > results/flake8-report.json
+
+.PHONY: sonar
+sonar:
+	docker run --rm --network=host \
+	  -e SONAR_HOST_URL={{ cookiecutter.sonarqube_server_url }} \
+	  -v "$(shell pwd)":/usr/src \
+	  sonarsource/sonar-scanner-cli \
+	  -Dsonar.projectKey={{ cookiecutter.sonarqube_project_key }} \
+	  -Dsonar.token={{ cookiecutter.sonarqube_token }} \
+	  -Dsonar.python.coverage.reportPaths=results/coverage.xml \
+	  -Dsonar.python.xunit.reportPath=results/pytest-results.xml \
+	  -Dsonar.python.flake8.reportPaths=results/flake8-report.json
+
+.PHONY: check-all
+check-all: format tests lint sonar
+	@echo "✅ Tous les tests et vérifications sont passés avec succès !"
+
+
+# ---------------------- APPLICATION COMMANDS ----------------------
 
 .PHONY: run
 run: $(VENV)/bin/activate
@@ -90,25 +139,6 @@ stop-jupyterlab:
 	@echo "Arrêt de JupyterLab..."
 	@pkill -f "jupyter-lab"
 
-.PHONY: sonar
-sonar:
-	docker run --rm --network=host \
-	  -e SONAR_HOST_URL={{ cookiecutter.sonarqube_server_url }} \
-	  -v "$(shell pwd)":/usr/src \
-	  sonarsource/sonar-scanner-cli \
-	  -Dsonar.projectKey={{ cookiecutter.sonarqube_project_key }} \
-	  -Dsonar.token={{ cookiecutter.sonarqube_token }} \
-	  -Dsonar.python.coverage.reportPaths=results/coverage.xml \
-	  -Dsonar.python.xunit.reportPath=results/pytest-results.xml \
-	  -Dsonar.python.flake8.reportPaths=results/flake8-report.json
-
-.PHONY: format
-format: $(VENV)/bin/activate
-	$(VENV)/bin/black app/
-
-.PHONY: lint
-lint: $(VENV)/bin/activate
-	$(VENV)/bin/flake8 app/ tests/ --format=json > results/flake8-report.json
 
 # ---------------------- DOCKER COMMANDS ----------------------
 
@@ -120,6 +150,8 @@ docker-build:
 docker-run:
 	docker run -d --name $(PROJECT_NAME) -p 80:80 $(PROJECT_NAME)
 
+# ---------------------- CLEANUP ----------------------
+
 .PHONY: clean
 clean:
 	rm -rf $(VENV)
@@ -127,3 +159,71 @@ clean:
 	find . -type f -name "*.pyc" -exec rm -f {} +
 	find . -type f -name "*.pyo" -exec rm -f {} +
 	rm -rf results
+
+
+
+
+.PHONY: update-env
+update-env:
+	@echo "🔄 Mise à jour de migrations/env.py..."
+	@cat > migrations/env.py <<EOF
+from logging.config import fileConfig
+from sqlalchemy import engine_from_config, pool
+from alembic import context
+import importlib
+import pkgutil
+
+# Charger la configuration depuis alembic.ini
+config = context.config
+sqlalchemy_url = config.get_main_option("sqlalchemy.url")
+
+# Configuration du logging
+if config.config_file_name is not None:
+    fileConfig(config.config_file_name)
+
+# Détection automatique des modèles SQLAlchemy
+def import_submodules(package):
+    """Importe automatiquement tous les sous-modules d'un package donné."""
+    package_name = package.__name__
+    return {
+        name: importlib.import_module(package_name + "." + name)
+        for _, name, _ in pkgutil.iter_modules(package.__path__)
+    }
+
+# Charger automatiquement tous les modèles de app.db.models
+from app.db import models
+import_submodules(models)
+
+# Récupérer target_metadata automatiquement
+from app.db.base import Base
+target_metadata = Base.metadata
+
+def run_migrations_offline():
+    """Exécuter les migrations en mode offline."""
+    context.configure(
+        url=sqlalchemy_url,
+        target_metadata=target_metadata,
+        literal_binds=True,
+        dialect_opts={"paramstyle": "named"},
+    )
+    with context.begin_transaction():
+        context.run_migrations()
+
+def run_migrations_online():
+    """Exécuter les migrations en mode online."""
+    connectable = engine_from_config(
+        config.get_section(config.config_ini_section),
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
+    )
+    with connectable.connect() as connection:
+        context.configure(connection=connection, target_metadata=target_metadata)
+        with context.begin_transaction():
+            context.run_migrations()
+
+if context.is_offline_mode():
+    run_migrations_offline()
+else:
+    run_migrations_online()
+EOF
+	@echo "✅ env.py mis à jour avec succès !"
