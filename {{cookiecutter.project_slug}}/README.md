@@ -2,9 +2,17 @@
 
 ## Overview
 
-This project is a FastAPI application with JWT authentication, database migrations with Alembic, unit tests with Pytest, code quality analysis with Flake8, and SonarQube integration for code quality reporting.
+This project is a FastAPI application with the following features:
 
-## Project Structure
+- Database migrations with Alembic
+- Unit tests with Pytest
+- Code formatting with Black
+- Linting with Flake8
+- Static code analysis with SonarQube
+- Task automation using Makefile
+- Docker support for containerized deployment
+
+## 📁 Project Structure
 
 ```bash
 my_fastapi_project/
@@ -29,21 +37,24 @@ my_fastapi_project/
 │── tests/
 │   ├── test_main.py
 │   ├── conftest.py
-│── migrations/
+│── temp/
 │── Makefile
+│── alembic.ini
+│── pytest.ini
 │── requirements.txt
 │── .flake8
 │── sonar-project.properties
 │── README.md
+
 ```
 
-## Installation & Setup
+## 🔥 Quick Start
 
 ```bash
-make install
+make start
 ```
 
-## Database Setup with Alembic
+## 🗄 Database Setup with Alembic
 
 Initialize Alembic
 ```bash
@@ -60,7 +71,7 @@ Apply migrations
 make alembic-upgrade
 ```
 
-## Run the FastAPI Server
+## 🌍 Run the FastAPI Server
 By default, the application runs on http://localhost:8000
 ```bash
 make run
@@ -71,7 +82,7 @@ To run on a specific port, use:
 make run PORT=8085
 ```
 
-## Run Tests & Linting
+## ✅ Run Tests & Linting
 
 Run unit tests with coverage
 ```bash
@@ -88,7 +99,12 @@ Run code formatting with Black
 make format
 ```
 
-## SonarQube Integration
+Run all checks (formatting, linting, tests, and SonarQube analysis)
+```bash
+make check-all
+```
+
+## 📊 SonarQube Integration
 
 SonarQube is used for static code analysis.
 
@@ -97,7 +113,7 @@ Run SonarQube Analysis
 make sonar
 ```
 
-## Docker Support
+## 🐳 Docker Support
 
 Build the Docker image
 ```bash
@@ -109,7 +125,7 @@ Run the Docker container
 make docker-run
 ```
 
-## Switching from SQLite to PostgreSQL
+## 🔄 Switching from SQLite to PostgreSQL
 
 Modify the database URL in app/db/database.py:
 ```python
@@ -126,3 +142,10 @@ Apply the migrations to PostgreSQL:
 make alembic-upgrade
 ```
 
+## 🧹 Clean up the project
+
+To remove all temporary files, virtual environments, and caches:
+
+```bash
+make clean
+```
