@@ -74,12 +74,13 @@ alembic-reset:
 # ---------------------- ENV.PY MANAGEMENT ----------------------
 
 .PHONY: change-env
-change-env: 
+change-env:
 	@if [ -f "temp/env.py" ]; then \
-		echo "🔄 Copie du fichier env.py personnalisé..."; \
-		cp temp/env.py migrations/env.py; \
-		rm -rf temp; \
-		echo "✅ env.py mis à jour."; \
+		echo "🔄 Mise à jour de migrations/env.py..."; \
+		rm -f migrations/env.py; \
+		mv temp/env.py migrations/env.py; \
+		rmdir temp; \
+		echo "✅ env.py mis à jour avec succès !"; \
 	else \
 		echo "⚠️  Fichier temp/env.py introuvable !"; \
 	fi

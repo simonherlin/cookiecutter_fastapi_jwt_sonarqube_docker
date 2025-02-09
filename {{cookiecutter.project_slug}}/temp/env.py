@@ -3,6 +3,8 @@ from sqlalchemy import engine_from_config, pool
 from alembic import context
 import importlib
 import pkgutil
+from app.db import models
+from app.db.base import Base
 
 # Charger la configuration depuis alembic.ini
 config = context.config
@@ -11,6 +13,7 @@ sqlalchemy_url = config.get_main_option("sqlalchemy.url")
 # Configuration du logging
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
+
 
 # Détection automatique des modèles SQLAlchemy
 def import_submodules(package):
@@ -21,13 +24,11 @@ def import_submodules(package):
         for _, name, _ in pkgutil.iter_modules(package.__path__)
     }
 
-# Charger automatiquement tous les modèles de app.db.models
-from app.db import models  # Assurez-vous que tous les modèles sont dans ce package
+
 import_submodules(models)
 
-# Récupérer target_metadata automatiquement
-from app.db.base import Base
 target_metadata = Base.metadata
+
 
 # Fonction pour exécuter les migrations en mode offline
 def run_migrations_offline():
@@ -41,6 +42,7 @@ def run_migrations_offline():
     with context.begin_transaction():
         context.run_migrations()
 
+
 # Fonction pour exécuter les migrations en mode online
 def run_migrations_online():
     """Exécuter les migrations en mode online."""
@@ -53,6 +55,7 @@ def run_migrations_online():
         context.configure(connection=connection, target_metadata=target_metadata)
         with context.begin_transaction():
             context.run_migrations()
+
 
 # Déterminer si on exécute en mode offline ou online
 if context.is_offline_mode():
