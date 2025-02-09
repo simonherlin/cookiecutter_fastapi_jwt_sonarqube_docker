@@ -140,13 +140,39 @@ sonar:
 check-all: format tests lint sonar
 	@echo "✅ Tous les tests et vérifications sont passés avec succès !"
 
+# ---------------------- CELERY COMMANDS ----------------------
+
+.PHONY: celery-worker
+celery-worker:
+	@echo "🚀 Lancement du worker Celery..."
+	$(VENV)/bin/celery -A app.celery_worker.celery_app worker --loglevel=info
+
+.PHONY: celery-flower
+celery-flower:
+	@echo "📊 Lancement de Flower pour le monitoring des tâches..."
+	$(VENV)/bin/celery -A app.celery_worker.celery_app flower
+
+.PHONY: redis-start
+redis-start:
+	@echo "🚀 Démarrage de Redis..."
+	docker start redis || docker run -d --name redis -p 6379:6379 redis
+
+.PHONY: redis-stop
+redis-stop:
+	@echo "🛑 Arrêt de Redis..."
+	docker stop redis
+
 # ---------------------- APPLICATION COMMANDS ----------------------
 
 .PHONY: run
-run: $(VENV)/bin/activate
-	@echo "🚀 Démarrage de l'application FastAPI..."
-	$(VENV)/bin/uvicorn app.main:app --host 0.0.0.0 --port $(if $(PORT),$(PORT),8000) --reload
-	@echo "✅ Serveur FastAPI lancé."
+run:
+	@echo "🚀 Vérification et démarrage des services nécessaires..."
+	@make redis-start
+	@echo "🚀 Lancement du worker Celery..."
+	@tmux new-session -d -s celery_worker '$(VENV)/bin/celery -A app.celery_worker.celery_app worker --loglevel=info'
+	@echo "🚀 Lancement de FastAPI..."
+	@$(VENV)/bin/uvicorn app.main:app --host 0.0.0.0 --port $(if $(PORT),$(PORT),8000) --reload
+
 
 .PHONY: jupyterlab
 jupyterlab: $(VENV)/bin/activate
@@ -167,6 +193,19 @@ docker-run:
 	@echo "🚀 Lancement du conteneur Docker..."
 	docker run -d --name $(PROJECT_NAME) -p 80:80 $(PROJECT_NAME)
 	@echo "✅ Conteneur lancé."
+
+# ---------------------- GESTION DE FLOWER ----------------------
+
+.PHONY: celery-flower
+celery-flower:
+	@echo "📊 Lancement de Flower pour le monitoring des tâches..."
+	docker run -d --name flower -p 5555:5555 --network="host" mher/flower --broker=redis://localhost:6379/0
+
+.PHONY: celery-flower-stop
+celery-flower-stop:
+	@echo "🛑 Arrêt de Flower..."
+	docker stop flower && docker rm flower
+
 
 # ---------------------- NETTOYAGE ----------------------
 
